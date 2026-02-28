@@ -9,3 +9,6 @@ build
 .DS_Store
 
 /private/
+
+# Agent run outputs (uploaded as workflow artifacts)
+outputs/

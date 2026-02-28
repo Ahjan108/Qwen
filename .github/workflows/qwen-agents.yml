@@ -1,0 +1,41 @@
+# Qwen Background Agents — run Python agents on GitHub-hosted runners using cloud Qwen APIs.
+# No local Qwen required. Trigger manually (Actions > Run workflow) or on a schedule.
+# Secrets: add DASHSCOPE_API_KEY in repo Settings > Secrets and variables > Actions.
+name: Qwen Background Agents
+
+on:
+  workflow_dispatch:   # Manual trigger via GitHub Actions tab
+  schedule:
+    - cron: '0 */6 * * *'   # Every 6 hours (optional; edit or remove if not needed)
+
+jobs:
+  agents:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install openai
+
+      - name: Ensure outputs dir
+        run: mkdir -p outputs
+
+      - name: Run Agents
+        env:
+          QWEN_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          # Default: DashScope China. Override with repo variable MODEL_SERVER if needed (e.g. dashscope-us.aliyuncs.com).
+          MODEL_SERVER: https://dashscope.aliyuncs.com/compatible-mode/v1
+        run: python agents/multi_background.py
+
+      - name: Upload Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-results
+          path: outputs/
+        if: always()   # Upload even if script fails (outputs/ may be empty or partial)
