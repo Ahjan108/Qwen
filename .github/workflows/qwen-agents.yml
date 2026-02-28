@@ -1,12 +1,20 @@
-# Qwen Background Agents — run Python agents on GitHub-hosted runners using cloud Qwen APIs.
-# No local Qwen required. Trigger manually (Actions > Run workflow) or on a schedule.
-# Secrets: add DASHSCOPE_API_KEY in repo Settings > Secrets and variables > Actions.
+# Qwen Background Agents — translate all atoms and metadata into all Chinese dialects and Japanese.
+# Uses cloud Qwen (DashScope). For full translation, add secret PHOENIX_OMEGA_TOKEN (PAT with read
+# access to phoenix_omega repo) so the workflow can checkout atoms; then set ATOMS_SOURCE.
+# Secrets: DASHSCOPE_API_KEY (required); PHOENIX_OMEGA_TOKEN (optional, for translate-all).
 name: Qwen Background Agents
 
 on:
-  workflow_dispatch:   # Manual trigger via GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      limit_exercises:
+        description: 'Max exercises (translate mode); blank = all'
+        required: false
+      limit_atoms:
+        description: 'Max atoms (translate mode); blank = all; use 10 for quick test'
+        required: false
   schedule:
-    - cron: '0 */6 * * *'   # Every 6 hours (optional; edit or remove if not needed)
+    - cron: '0 */6 * * *'
 
 jobs:
   agents:
@@ -15,13 +23,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout phoenix_omega (atoms source)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.PHOENIX_OMEGA_REPO || 'Ahjan108/phoenix_omega' }}
+          token: ${{ secrets.PHOENIX_OMEGA_TOKEN }}
+          path: phoenix_omega
+        continue-on-error: true
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install openai
+        run: pip install openai pyyaml
 
       - name: Ensure outputs dir
         run: mkdir -p outputs
@@ -29,8 +45,10 @@ jobs:
       - name: Run Agents
         env:
           QWEN_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
-          # Default: DashScope China. Override with repo variable MODEL_SERVER if needed (e.g. dashscope-us.aliyuncs.com).
           MODEL_SERVER: https://dashscope.aliyuncs.com/compatible-mode/v1
+          ATOMS_SOURCE: phoenix_omega
+          LIMIT_EXERCISES: ${{ inputs.limit_exercises }}
+          LIMIT_ATOMS: ${{ inputs.limit_atoms }}
         run: python agents/multi_background.py
 
       - name: Upload Results

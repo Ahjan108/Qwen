@@ -5,16 +5,18 @@ Python agents that run on **GitHub Actions** using **cloud Qwen APIs** (DashScop
 ## How it works
 
 - **Workflow:** `.github/workflows/qwen-agents.yml` runs on `workflow_dispatch` (manual) and/or a schedule (e.g. every 6 hours).
-- **Runner:** Ubuntu on GitHub-hosted runners; installs `openai` and runs `agents/multi_background.py`.
-- **API:** Script uses `QWEN_API_KEY` (or `DASHSCOPE_API_KEY`) and `MODEL_SERVER` (OpenAI-compatible base URL). Default server: DashScope compatible-mode (China). Use repo variable `MODEL_SERVER` to point to another region (e.g. `https://dashscope-us.aliyuncs.com/compatible-mode/v1`).
-- **Outputs:** Agents write JSON (and any other files) under `outputs/`. The workflow uploads `outputs/*.json` as artifact `agent-results`.
+- **Translation:** When `ATOMS_SOURCE` is set (path to phoenix_omega checkout), the agent runs `translate_atoms_all_locales.py`: reads exercises from `SOURCE_OF_TRUTH/exercises_v4` and atoms from `atoms/**/CANONICAL.txt`, translates each into zh_CN, zh_TW, yue, ja_JP, and writes `outputs/translations/{locale}/exercises/` and `outputs/translations/{locale}/atoms/`.
+- **Fallback:** If phoenix_omega is not checked out, the agent runs a small demo (one chapter + summary).
+- **API:** Script uses `QWEN_API_KEY` (or `DASHSCOPE_API_KEY`) and `MODEL_SERVER`. Default: DashScope compatible-mode (China).
+- **Outputs:** Workflow uploads `outputs/` as artifact `agent-results`.
 
 ## Setup
 
 1. **GitHub Secrets** (repo Settings → Secrets and variables → Actions):
-   - `DASHSCOPE_API_KEY` — your DashScope (Alibaba Cloud) API key.
+   - **`DASHSCOPE_API_KEY`** — required. Your DashScope (Alibaba Cloud) API key.
+   - **`PHOENIX_OMEGA_TOKEN`** — optional. A PAT with read access to the phoenix_omega repo (e.g. Ahjan108/phoenix_omega). If set, the workflow checkouts phoenix_omega and runs the full translation; if not set, the agent runs a short demo only.
 
-2. **Optional:** Repo variable `MODEL_SERVER` to override the API base URL (e.g. US or Singapore DashScope).
+2. **Optional:** Repo variable `PHOENIX_OMEGA_REPO` to override the atoms repo (default `Ahjan108/phoenix_omega`). Repo variable `MODEL_SERVER` to override the API base URL.
 
 ## Run
 
